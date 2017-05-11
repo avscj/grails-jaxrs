@@ -4,6 +4,7 @@ import grails.plugins.Plugin
 import org.grails.plugins.jaxrs.core.ScanningResourceRegistrar
 import org.grails.plugins.jaxrs.swagger.BeanConfigFactoryBean
 import org.grails.plugins.jaxrs.swagger.SwaggerInitializationUtil
+import org.grails.plugins.jaxrs.jersey1.provider.GrailsMultipartReader
 
 class JaxrsJersey1GrailsPlugin extends Plugin {
     /**
@@ -68,6 +69,8 @@ class JaxrsJersey1GrailsPlugin extends Plugin {
                     bean.autowire = true
                 }
             }
+            
+            "${GrailsMultipartReader.name}"(GrailsMultipartReader)
         }
     }
 }

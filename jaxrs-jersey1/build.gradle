@@ -60,6 +60,7 @@ dependencies {
 
     compile project(':jaxrs-core')
     compile "com.sun.jersey.contribs:jersey-spring:$jerseyVersion"
+    compile "com.sun.jersey.contribs:jersey-multipart:$jerseyVersion"
     compile "com.sun.jersey:jersey-bundle:$jerseyVersion"
     compile "io.swagger:swagger-jaxrs:1.5.10"
     testCompile project(':jaxrs-integration-test')
