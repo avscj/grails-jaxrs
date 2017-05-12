@@ -21,6 +21,7 @@ import javax.ws.rs.ext.Provider
 import javax.ws.rs.ext.Providers
 
 import com.sun.jersey.core.header.MediaTypes
+import com.sun.jersey.core.header.FormDataContentDisposition
 import com.sun.jersey.multipart.BodyPart
 import com.sun.jersey.multipart.FormDataBodyPart
 import com.sun.jersey.multipart.FormDataMultiPart
@@ -29,7 +30,7 @@ import com.sun.jersey.spi.CloseableService
 import com.sun.jersey.spi.inject.ServerSide
 import com.sun.jersey.spi.inject.ConstrainedTo
 
-import org.springframework.web.multipart.support.AbstractMultipartHttpServletRequest
+import org.springframework.web.multipart.MultipartHttpServletRequest
 import org.springframework.web.multipart.MultipartRequest
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.multipart.commons.CommonsMultipartFile
@@ -107,9 +108,6 @@ class GrailsMultipartReader implements MessageBodyReader<MultiPart> {
         MultivaluedMap<String, String> headers,
         InputStream stream) throws IOException, IllegalArgumentException {
         
-        
-        mediaType = unquoteMediaTypeParameters(mediaType, "boundary")
-        
         boolean formData = false
         MultiPart multiPart
         if (MediaTypes.typeEquals(mediaType, MediaType.MULTIPART_FORM_DATA_TYPE)) {
@@ -150,11 +148,18 @@ class GrailsMultipartReader implements MessageBodyReader<MultiPart> {
                 BodyPart bodyPart = formData ? new FormDataBodyPart(fileNameFix) : new BodyPart()
                 // Configure providers
                 bodyPart.setProviders(providers)
-                
-                if (request instanceof AbstractMultipartHttpServletRequest) {
+                if (request instanceof MultipartHttpServletRequest) {
                     Part filePart = request.getPart(fileKey)
-                    for (String headerName : filePart.headerNames) {
-                        bodyPart.getHeaders().add(headerName, filePart.getHeader(headerName))
+                    if (filePart) {
+                        for (String headerName : filePart.headerNames) {
+                            bodyPart.getHeaders().add(headerName, filePart.getHeader(headerName))
+                        }
+                    } else {
+                        log.debug "Part not available, building content disposition from file ${fileContent}"
+                        bodyPart.contentDisposition = FormDataContentDisposition.name(fileContent.name).
+                            fileName(fileContent.originalFilename).
+                            size(fileContent.size).
+                            build()
                     }
                 }
                 bodyPart.setMediaType(MediaType.valueOf(fileContent.getContentType()))
@@ -169,24 +174,5 @@ class GrailsMultipartReader implements MessageBodyReader<MultiPart> {
         
         closeableService.add(multiPart)
         return multiPart
-    }
-
-    protected static MediaType unquoteMediaTypeParameters(final MediaType mediaType, final String... parameters) {
-        if (parameters == null || parameters.length == 0) {
-            return mediaType
-        }
-
-        final HashMap<String, String> unquotedParams = new HashMap<String, String>(mediaType.getParameters())
-
-        for (final String parameterName : parameters) {
-            String parameterValue = mediaType.getParameters().get(parameterName)
-
-            if (parameterValue.startsWith("\"")) {
-                parameterValue = parameterValue.substring(1, parameterValue.length() - 1)
-                unquotedParams.put(parameterName, parameterValue)
-            }
-        }
-
-        return new MediaType(mediaType.getType(), mediaType.getSubtype(), unquotedParams)
     }
 }
