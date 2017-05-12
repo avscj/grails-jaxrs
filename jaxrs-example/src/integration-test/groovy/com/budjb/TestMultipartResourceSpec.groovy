@@ -15,8 +15,8 @@ class TestMultipartResourceSpec extends JaxrsIntegrationSpec {
         when: "Sending a file to the web service"
         def response = makeRequest(new JaxrsRequestProperties(method: 'POST', 
             uri: '/api/testMultipart/upload',
-            headers: ['Content-Type' : ['multipart/form-data; boundary=fnord']],
-            body: getMultipartBody(file)))
+            headers: ['Content-Type' : ['multipart/form-data']],
+            files: ['file': file]))
         def result = new groovy.json.JsonSlurper().parseText(response.bodyAsString)
 
         then: "The response is correct"
@@ -33,15 +33,5 @@ class TestMultipartResourceSpec extends JaxrsIntegrationSpec {
     @Override
     List getResources() {
         return []
-    }
-    
-    
-    private byte[] getMultipartBody(File file) {
-        MultipartEntityBuilder e = new MultipartEntityBuilder()
-        e.setBoundary("fnord")
-        e.addBinaryBody("file", file, ContentType.create("application/pdf"), file.name)
-        ByteArrayOutputStream baos = new ByteArrayOutputStream()
-        e.build().writeTo(baos)
-        return baos.toByteArray()
     }
 }
