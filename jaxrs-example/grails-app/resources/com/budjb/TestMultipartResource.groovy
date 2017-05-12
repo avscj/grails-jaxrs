@@ -26,6 +26,7 @@ class TestMultipartResource {
         // curl -v -X POST -H "Content-Type: multipart/form-data" -F "file=@src/integration-test/groovy/com/budjb/resources/pdf-sample.pdf" http://localhost:8060/api/testMultipart/upload
         JSON ret = [
             name: fileBodyPart.getContentDisposition().getFileName(),
+            contentype: fileBodyPart.getContentDisposition().getType(),
             size: file.size(),
             mimeType: fileBodyPart.getMediaType().toString()
         ] as JSON
