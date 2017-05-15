@@ -140,33 +140,37 @@ class GrailsMultipartReader implements MessageBodyReader<MultiPart> {
         }
         HttpServletRequest request = WebUtils.retrieveGrailsWebRequest().currentRequest
         if (request instanceof MultipartRequest) {
-            for (Map.Entry<String,MultipartFile> fileData : request.fileMap.entrySet()) {
+            for (Map.Entry<String,Collection<MultipartFile>> fileData : request.multiFileMap.entrySet()) {
                 String fileKey = fileData.key
-                MultipartFile fileContent = fileData.value
-                
-                
-                BodyPart bodyPart = formData ? new FormDataBodyPart(fileNameFix) : new BodyPart()
-                // Configure providers
-                bodyPart.setProviders(providers)
-                if (request instanceof MultipartHttpServletRequest) {
-                    Part filePart = request.getPart(fileKey)
-                    if (filePart) {
-                        for (String headerName : filePart.headerNames) {
-                            bodyPart.getHeaders().add(headerName, filePart.getHeader(headerName))
+                Collection<MultipartFile> fileContents = fileData.value
+                for (MultipartFile fileContent:fileContents) {   
+                    BodyPart bodyPart = formData ? new FormDataBodyPart(fileNameFix) : new BodyPart()
+                    // Configure providers
+                    bodyPart.setProviders(providers)
+                    if (request instanceof MultipartHttpServletRequest) {
+                        // A bit of a hacky way to get hold of the Part which may have
+                        // extra information like creation, modification or read dates,
+                        // supported by the FormDataContentDisposition.
+                        if (fileContent.hasProperty('part') && fileContent.part) {
+                            Part filePart = fileContent.part
+                            log.debug "Part available, with headers {}",filePart.headerNames
+                            for (String headerName : filePart.headerNames) {
+                                bodyPart.getHeaders().add(headerName, filePart.getHeader(headerName))
+                            }
+                        } else {
+                            log.debug "Part not available, building content disposition from file {}", fileContent
+                            bodyPart.contentDisposition = FormDataContentDisposition.name(fileContent.name).
+                                fileName(fileContent.originalFilename).
+                                size(fileContent.size).
+                                build()
                         }
-                    } else {
-                        log.debug "Part not available, building content disposition from file ${fileContent}"
-                        bodyPart.contentDisposition = FormDataContentDisposition.name(fileContent.name).
-                            fileName(fileContent.originalFilename).
-                            size(fileContent.size).
-                            build()
                     }
+                    bodyPart.setMediaType(MediaType.valueOf(fileContent.getContentType()))
+                    // Copy data into a BodyPartEntity structure
+                    bodyPart.setEntity(new GrailsBodyPartEntity(fileContent))
+                    // Add this BodyPart to our MultiPart
+                    multiPart.getBodyParts().add(bodyPart)
                 }
-                bodyPart.setMediaType(MediaType.valueOf(fileContent.getContentType()))
-                // Copy data into a BodyPartEntity structure
-                bodyPart.setEntity(new GrailsBodyPartEntity(fileContent))
-                // Add this BodyPart to our MultiPart
-                multiPart.getBodyParts().add(bodyPart)
             }
         } else {
             throw new IllegalArgumentException("Cannot process request of type ${request.getClass()}")
