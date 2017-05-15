@@ -48,7 +48,7 @@ class JaxrsRequestProperties {
     /**
      * Files to be sent, only considered for multipart requests
      */
-    Map<String, File> files = [:]
+    Map<String, Collection<File>> files = [:]
     
     /**
      * Constant for multipart request type
@@ -84,9 +84,11 @@ class JaxrsRequestProperties {
         MockHttpServletRequest httpServletRequest
         if (isMultipart()) {
             httpServletRequest = new MockMultipartHttpServletRequest(servletContext)
-            files.each { String name, File file ->
-                httpServletRequest.addFile(new MockMultipartFile(name, 
-                        file.name, file.toURL().openConnection().getContentType(), file.newInputStream()))       
+            files.each { String name, Collection<File> files ->
+                files.each { File file ->
+                    httpServletRequest.addFile(new MockMultipartFile(name, 
+                            file.name, file.toURL().openConnection().getContentType(), file.newInputStream()))       
+                }
             }
         } else {
             httpServletRequest = new MockHttpServletRequest(servletContext)
