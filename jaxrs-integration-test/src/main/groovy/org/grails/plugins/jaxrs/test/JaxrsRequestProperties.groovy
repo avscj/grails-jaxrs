@@ -142,6 +142,7 @@ class JaxrsRequestProperties {
             } else if (headerContentType instanceof Collection) {
                 return headerContentType.find { it.toLowerCase().startsWith(MULTIPART) } != null
             }
+            return false
         }
     }
 }
